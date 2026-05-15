@@ -1,0 +1,4 @@
+# Optional speech-to-text dependencies.
+# Install only when ENABLE_WHISPER=true is needed.
+openai-whisper>=20250625
+imageio-ffmpeg>=0.5.1

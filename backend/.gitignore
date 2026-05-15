@@ -1,0 +1,23 @@
+# Local environment and generated runtime files
+.env
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+pytest-cache-files-*/
+*.log
+qa-test-artifacts/
+
+# Local databases
+data/*.sqlite3
+
+# Local binaries and model downloads
+bin/ffmpeg.exe
+models/whisper/*
+!models/whisper/.gitkeep
+
+# Uploaded/demo runtime media
+uploads/audio/*
+uploads/images/*
+!uploads/audio/.gitkeep
+!uploads/images/.gitkeep

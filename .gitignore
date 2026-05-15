@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+pytest-cache-files-*/
+backend/.tmp/
+
+# Backend local data
+backend/.env
+backend/bin/ffmpeg.exe
+backend/data/*.sqlite3
+backend/models/whisper/*
+backend/uploads/audio/*
+backend/uploads/images/*
+!backend/uploads/audio/.gitkeep
+!backend/uploads/images/.gitkeep
+
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.env.local
+
+# Logs
+*.log

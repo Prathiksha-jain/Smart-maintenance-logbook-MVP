@@ -1,4 +1,4 @@
-from app.services.extractor import extract_defect_details, normalize_coach_number
+from app.services.extractor import extract_defect_details, normalize_coach_number, normalize_translated_defect_text
 
 
 def test_door_defect() -> None:
@@ -57,3 +57,21 @@ def test_coach_number_ignores_text_without_real_coach_code() -> None:
 
     assert result.coach_number is None
     assert normalize_coach_number("A physical panel had started sparking") is None
+
+
+def test_door_not_closed_translation_maps_to_not_closing() -> None:
+    result = extract_defect_details("The second door of S3 coach is not closed by the team.")
+
+    assert result.coach_number == "S3"
+    assert result.component_name == "Door"
+    assert result.defect_type == "Door not closing"
+    assert result.severity == "Medium"
+
+
+def test_hindi_door_phrase_gets_domain_normalized_translation() -> None:
+    translated = normalize_translated_defect_text(
+        "एस3 कोच का दूसरा दरवाज़ा ठीक से बंद नहीं हो रहा है।",
+        "The second door of S3 coach is not closed by the team.",
+    )
+
+    assert translated == "Coach S3 door number two is not closing properly."

@@ -11,7 +11,7 @@ An isolated demo-ready MVP for railway inspection personnel. Inspectors can log 
 - Frontend port: `127.0.0.1:3101`.
 - SQLite database path: `backend/data/smart_logbook.sqlite3`.
 - PostgreSQL database name when enabled: `smart_maintenance_logbook`.
-- Whisper transcription is optional and disabled by default with `ENABLE_WHISPER=false`.
+- Whisper transcription and English translation are optional and disabled by default with `ENABLE_WHISPER=false`.
 - Upload folders:
   - `backend/uploads/audio/`
   - `backend/uploads/images/`
@@ -106,7 +106,7 @@ npm run build
 4. Switch the demo role to `Inspector`.
 5. Open `/inspector`.
 6. Use a sample transcript shortcut or type a new railway defect transcript.
-7. Optionally record audio or upload an audio file.
+7. Optionally record audio or upload an audio file. If Whisper is enabled, Hindi/Kannada/other-language audio is translated to English before defect extraction.
 8. Optionally upload an image.
 9. Submit the defect and show the extracted component, defect type, severity, coach number, and generated defect code.
 10. Switch the demo role to `Supervisor`.
@@ -133,6 +133,12 @@ Demo users:
 
 ```powershell
 curl.exe http://127.0.0.1:8101/api/auth/demo-users
+```
+
+Transcribe and translate uploaded audio for a defect:
+
+```powershell
+curl.exe -X POST http://127.0.0.1:8101/api/defects/1/transcribe
 ```
 
 ## Troubleshooting

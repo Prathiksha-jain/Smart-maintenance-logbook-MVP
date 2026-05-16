@@ -50,3 +50,10 @@ def test_coach_number_normalization() -> None:
     assert normalize_coach_number("s-3") == "S3"
     assert normalize_coach_number("coach b 2") == "B2"
     assert normalize_coach_number("A1") == "A1"
+
+
+def test_coach_number_ignores_text_without_real_coach_code() -> None:
+    result = extract_defect_details("A physical panel had started sparking but there was continuous noise.")
+
+    assert result.coach_number is None
+    assert normalize_coach_number("A physical panel had started sparking") is None

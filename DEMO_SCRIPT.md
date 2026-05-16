@@ -6,7 +6,7 @@ Use this script to present the MVP to the team in about 8 to 10 minutes.
 
 Say:
 
-> This is a local, isolated Smart Maintenance Logbook MVP for railway inspection teams. It uses FastAPI, SQLite, Next.js, TypeScript, and Tailwind. For this demo, there is no PostgreSQL, no Docker, and no external system dependency.
+> This is a local, isolated Smart Maintenance Logbook MVP for railway inspection teams. It uses FastAPI, SQLAlchemy, PostgreSQL or SQLite, Next.js, TypeScript, and Tailwind. For this demo, Docker is not used and all app work stays inside this project folder.
 
 Mention the ports:
 
@@ -73,7 +73,7 @@ Use this transcript:
 Coach B2 brake pipe leakage near left side connection, needs urgent attention.
 ```
 
-Optionally record a short audio clip or upload a sample file. Optionally upload an image.
+Optionally record a short audio clip in English, Hindi, Kannada, or another supported language. Optionally upload an image.
 
 Click `Submit defect`.
 
@@ -89,6 +89,10 @@ Show:
 Say:
 
 > The rule-based extractor turns unstructured maintenance language into structured fields. For this transcript, it identifies brake system, brake leakage, and critical severity.
+
+If audio is used, say:
+
+> Whisper transcribes the recorded audio, translates it to English when needed, and then the extractor runs on the English text.
 
 ## 6. Supervisor Flow
 
@@ -130,8 +134,8 @@ Say:
 Production next steps:
 
 - Real authentication and role permissions.
-- PostgreSQL and Docker when approved.
-- Speech-to-text integration.
+- Database migrations and Docker when approved.
+- Production speech-to-text runtime hardening.
 - File storage hardening.
 - Audit logs and notifications.
 - Assignment workflow and reporting exports.

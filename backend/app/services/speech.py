@@ -16,6 +16,7 @@ class SpeechToTextError(RuntimeError):
 class TranscriptionResult:
     raw_transcript: str
     translated_text: str | None = None
+    language: str | None = None
 
 
 def transcribe_audio_file(audio_path: Path) -> TranscriptionResult:
@@ -26,7 +27,8 @@ def transcribe_audio_file(audio_path: Path) -> TranscriptionResult:
 
     try:
         model = _get_whisper_model()
-        result: dict[str, Any] = model.transcribe(str(audio_path))
+        result: dict[str, Any] = model.transcribe(str(audio_path), task="transcribe")
+        translation_result: dict[str, Any] = model.transcribe(str(audio_path), task="translate")
     except SpeechToTextError:
         raise
     except Exception as exc:
@@ -36,11 +38,15 @@ def transcribe_audio_file(audio_path: Path) -> TranscriptionResult:
     if not text:
         raise SpeechToTextError("Whisper did not return any transcript text.")
 
-    translated_text = result.get("translated_text")
-    if translated_text is not None:
-        translated_text = str(translated_text).strip() or None
+    translated_text = str(translation_result.get("text") or "").strip() or None
+    if translated_text == text:
+        translated_text = None
 
-    return TranscriptionResult(raw_transcript=text, translated_text=translated_text)
+    language = result.get("language")
+    if language is not None:
+        language = str(language).strip() or None
+
+    return TranscriptionResult(raw_transcript=text, translated_text=translated_text, language=language)
 
 
 def _load_whisper_module():

@@ -4,12 +4,12 @@ FastAPI backend MVP for the Smart Maintenance Logbook Web project.
 
 ## Scope
 
-- SQLite only for the MVP.
-- Database location: `backend/data/smart_logbook.sqlite3`.
+- SQLite is available for the MVP, and a separate project PostgreSQL database can be enabled when needed.
+- SQLite database location: `backend/data/smart_logbook.sqlite3`.
 - Uploads stay inside `backend/uploads/audio` and `backend/uploads/images`.
 - Demo users are seeded automatically on startup.
-- No PostgreSQL, Docker, or global system configuration is used.
-- Whisper speech-to-text is optional and disabled by default.
+- No Docker or global system configuration is used.
+- Whisper speech-to-text/English translation is optional and disabled by default.
 
 ## Setup
 
@@ -85,13 +85,13 @@ To enable local Whisper later:
 1. Install optional dependencies:
 
 ```powershell
-python -m pip --python .\.venv install -r requirements-whisper.txt
+pip install -r requirements-whisper.txt
 ```
 
 2. Set `ENABLE_WHISPER=true` in `backend/.env`.
 3. Restart the backend.
 
-When enabled, `POST /api/defects/{id}/transcribe` finds the latest audio evidence for the defect, transcribes it, saves the transcript, re-runs the rule-based extractor, and updates the defect fields. Whisper model files are downloaded only inside `backend/models/whisper/`.
+When enabled, `POST /api/defects/{id}/transcribe` finds the latest audio evidence for the defect, transcribes it, translates the audio to English when needed, saves the original transcript and English translation, re-runs the rule-based extractor on the English text, and updates the defect fields. Whisper model files are downloaded only inside `backend/models/whisper/`.
 
 ## Demo Users
 

@@ -127,7 +127,8 @@ def transcribe_defect_audio(defect_id: int, db: Session = Depends(get_db)) -> Tr
     except SpeechToTextError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    extracted = extract_defect_details(transcription.raw_transcript)
+    extraction_text = transcription.translated_text or transcription.raw_transcript
+    extracted = extract_defect_details(extraction_text)
     defect.raw_transcript = transcription.raw_transcript
     defect.translated_text = transcription.translated_text
     defect.coach_number = extracted.coach_number or defect.coach_number
@@ -138,8 +139,11 @@ def transcribe_defect_audio(defect_id: int, db: Session = Depends(get_db)) -> Tr
 
     db.commit()
     db.refresh(defect)
+    message = "Audio transcribed and defect details updated."
+    if transcription.translated_text:
+        message = "Audio transcribed, translated to English, and defect details updated."
     return TranscriptionResponse(
-        message="Audio transcribed and defect details updated.",
+        message=message,
         defect=defect,
     )
 

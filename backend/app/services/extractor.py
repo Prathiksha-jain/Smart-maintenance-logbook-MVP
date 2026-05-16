@@ -30,7 +30,7 @@ def normalize_coach_number(value: str | None) -> str | None:
         return None
     match = COACH_PATTERN.search(value)
     if match is None:
-        return value.strip().upper() or None
+        return None
     return f"{match.group(1).upper()}{match.group(2)}"
 
 

@@ -366,6 +366,16 @@ function DefectDetail({
             <p className="mt-2 rounded-lg border border-slate-200 bg-white p-3 text-sm leading-6 text-slate-700">
               {defect.raw_transcript}
             </p>
+            {defect.translated_text ? (
+              <>
+                <h3 className="mt-4 text-sm font-semibold uppercase tracking-wide text-slate-500">
+                  English translation
+                </h3>
+                <p className="mt-2 rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm leading-6 text-emerald-900">
+                  {defect.translated_text}
+                </p>
+              </>
+            ) : null}
           </div>
 
           <div className="grid gap-3">
@@ -377,7 +387,7 @@ function DefectDetail({
                 onClick={onTranscribe}
                 disabled={transcribing || audioFiles.length === 0}
               >
-                {transcribing ? "Transcribing..." : "Transcribe audio"}
+                {transcribing ? "Transcribing..." : "Transcribe and translate audio"}
               </button>
             ) : null}
             {audioFiles.length === 0 ? (

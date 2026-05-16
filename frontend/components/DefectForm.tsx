@@ -109,7 +109,9 @@ export default function DefectForm() {
           </p>
           <p className="text-sm text-slate-500">Submitting as the inspector demo user.</p>
           {health?.whisper_enabled ? (
-            <p className="text-sm text-emerald-700">Whisper is enabled: recorded audio will be transcribed after submit.</p>
+            <p className="text-sm text-emerald-700">
+              Whisper is enabled: recorded audio will be transcribed and translated to English after submit.
+            </p>
           ) : (
             <p className="text-sm text-slate-500">Whisper is disabled: type a transcript manually for extraction.</p>
           )}
@@ -206,7 +208,7 @@ export default function DefectForm() {
           className="primary-button w-full sm:w-auto"
           disabled={isSubmitting || usersLoading || !canSubmit}
         >
-          {isSubmitting ? "Submitting..." : health?.whisper_enabled ? "Submit and transcribe" : "Submit defect"}
+          {isSubmitting ? "Submitting..." : health?.whisper_enabled ? "Submit and translate audio" : "Submit defect"}
         </button>
       </form>
 
@@ -225,6 +227,9 @@ export default function DefectForm() {
             <ResultRow label="Defect type" value={createdDefect.defect_type} />
             <ResultRow label="Severity" value={createdDefect.severity} />
             <ResultRow label="Status" value={createdDefect.status} />
+            {createdDefect.translated_text ? (
+              <ResultRow label="English translation" value={createdDefect.translated_text} />
+            ) : null}
             <ResultRow label="Description" value={createdDefect.description} />
           </dl>
         )}

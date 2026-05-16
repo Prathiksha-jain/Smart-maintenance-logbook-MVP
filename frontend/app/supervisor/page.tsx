@@ -15,8 +15,8 @@ import {
   transcribeDefectAudio,
   updateDefectStatus
 } from "@/lib/api";
-import type { DashboardSummary, DefectLog, DefectStatus, HealthStatus, Severity } from "@/lib/types";
-import { SEVERITY_OPTIONS, STATUS_OPTIONS } from "@/lib/types";
+import type { DashboardSummary, DefectLog, DefectStatus, HealthStatus, Severity, SourceLanguage } from "@/lib/types";
+import { SEVERITY_OPTIONS, SOURCE_LANGUAGE_OPTIONS, STATUS_OPTIONS } from "@/lib/types";
 import { useDemoUser } from "@/lib/useDemoUser";
 
 export default function SupervisorPage() {
@@ -29,6 +29,7 @@ export default function SupervisorPage() {
   const [severityFilter, setSeverityFilter] = useState<Severity | "">("");
   const [componentFilter, setComponentFilter] = useState("");
   const [statusDraft, setStatusDraft] = useState<DefectStatus>("Open");
+  const [sourceLanguage, setSourceLanguage] = useState<SourceLanguage>("hi");
   const [remarks, setRemarks] = useState("");
   const [health, setHealth] = useState<HealthStatus | null>(null);
   const [loading, setLoading] = useState(true);
@@ -173,7 +174,7 @@ export default function SupervisorPage() {
     setError(null);
     setNotice(null);
     try {
-      const response = await transcribeDefectAudio(selectedDefect.id);
+      const response = await transcribeDefectAudio(selectedDefect.id, sourceLanguage);
       if (response.defect) {
         setSelectedDefect(response.defect);
         const [summaryData, filteredDefects, everyDefect] = await Promise.all([
@@ -301,8 +302,10 @@ export default function SupervisorPage() {
           saveDisabled={demoUsersLoading || !supervisorUser}
           whisperEnabled={health?.whisper_enabled === true}
           transcribing={transcribing}
+          sourceLanguage={sourceLanguage}
           onStatusChange={setStatusDraft}
           onRemarksChange={setRemarks}
+          onSourceLanguageChange={setSourceLanguage}
           onSave={handleStatusUpdate}
           onTranscribe={handleTranscribeAudio}
         />
@@ -320,8 +323,10 @@ type DefectDetailProps = {
   saveDisabled: boolean;
   whisperEnabled: boolean;
   transcribing: boolean;
+  sourceLanguage: SourceLanguage;
   onStatusChange: (status: DefectStatus) => void;
   onRemarksChange: (remarks: string) => void;
+  onSourceLanguageChange: (language: SourceLanguage) => void;
   onSave: () => void;
   onTranscribe: () => void;
 };
@@ -335,8 +340,10 @@ function DefectDetail({
   saveDisabled,
   whisperEnabled,
   transcribing,
+  sourceLanguage,
   onStatusChange,
   onRemarksChange,
+  onSourceLanguageChange,
   onSave,
   onTranscribe
 }: DefectDetailProps) {
@@ -381,14 +388,31 @@ function DefectDetail({
           <div className="grid gap-3">
             <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Audio evidence</h3>
             {whisperEnabled ? (
-              <button
-                type="button"
-                className="secondary-button justify-self-start"
-                onClick={onTranscribe}
-                disabled={transcribing || audioFiles.length === 0}
-              >
-                {transcribing ? "Transcribing..." : "Transcribe and translate audio"}
-              </button>
+              <div className="grid gap-3">
+                <label className="grid gap-2">
+                  <span className="field-label">Audio language</span>
+                  <select
+                    className="field-input"
+                    value={sourceLanguage}
+                    onChange={(event) => onSourceLanguageChange(event.target.value as SourceLanguage)}
+                    disabled={transcribing}
+                  >
+                    {SOURCE_LANGUAGE_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button
+                  type="button"
+                  className="secondary-button justify-self-start"
+                  onClick={onTranscribe}
+                  disabled={transcribing || audioFiles.length === 0}
+                >
+                  {transcribing ? "Transcribing..." : "Transcribe and translate audio"}
+                </button>
+              </div>
             ) : null}
             {audioFiles.length === 0 ? (
               <p className="rounded-lg border border-dashed border-slate-300 bg-slate-50 p-4 text-sm text-slate-500">

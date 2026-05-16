@@ -91,7 +91,7 @@ pip install -r requirements-whisper.txt
 2. Set `ENABLE_WHISPER=true` in `backend/.env`.
 3. Restart the backend.
 
-When enabled, `POST /api/defects/{id}/transcribe` finds the latest audio evidence for the defect, transcribes it, translates the audio to English when needed, saves the original transcript and English translation, re-runs the rule-based extractor on the English text, and updates the defect fields. Whisper model files are downloaded only inside `backend/models/whisper/`.
+When enabled, `POST /api/defects/{id}/transcribe` finds the latest audio evidence for the defect, transcribes it, translates the audio to English when needed, saves the original transcript and English translation, re-runs the rule-based extractor on the English text, and updates the defect fields. Send `{"source_language":"hi"}` for Hindi, `{"source_language":"kn"}` for Kannada, `{"source_language":"en"}` for English, or `{"source_language":"auto"}` for auto-detect. Whisper model files are downloaded only inside `backend/models/whisper/`.
 
 ## Demo Users
 

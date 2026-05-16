@@ -6,6 +6,8 @@ export type DefectStatus = "Open" | "Reviewed" | "Assigned" | "In Progress" | "R
 
 export type MediaFileType = "audio" | "image";
 
+export type SourceLanguage = "auto" | "en" | "hi" | "kn";
+
 export type DemoUser = {
   id: number;
   name: string;
@@ -84,6 +86,10 @@ export type TranscriptionResponse = {
   defect: DefectLog | null;
 };
 
+export type TranscriptionPayload = {
+  source_language: SourceLanguage;
+};
+
 export const STATUS_OPTIONS: DefectStatus[] = [
   "Open",
   "Reviewed",
@@ -94,3 +100,10 @@ export const STATUS_OPTIONS: DefectStatus[] = [
 ];
 
 export const SEVERITY_OPTIONS: Severity[] = ["Low", "Medium", "High", "Critical"];
+
+export const SOURCE_LANGUAGE_OPTIONS: { value: SourceLanguage; label: string }[] = [
+  { value: "auto", label: "Auto detect" },
+  { value: "en", label: "English" },
+  { value: "hi", label: "Hindi" },
+  { value: "kn", label: "Kannada" }
+];

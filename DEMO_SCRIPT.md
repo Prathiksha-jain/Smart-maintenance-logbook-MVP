@@ -73,7 +73,7 @@ Use this transcript:
 Coach B2 brake pipe leakage near left side connection, needs urgent attention.
 ```
 
-Optionally record a short audio clip in English, Hindi, Kannada, or another supported language. Optionally upload an image.
+Optionally choose the audio language, then record a short audio clip in English, Hindi, or Kannada. Optionally upload an image.
 
 Click `Submit defect`.
 

@@ -106,7 +106,7 @@ npm run build
 4. Switch the demo role to `Inspector`.
 5. Open `/inspector`.
 6. Use a sample transcript shortcut or type a new railway defect transcript.
-7. Optionally record audio or upload an audio file. If Whisper is enabled, Hindi/Kannada/other-language audio is translated to English before defect extraction.
+7. Optionally record audio or upload an audio file. If Whisper is enabled, choose the audio language before submitting. Hindi/Kannada/English audio is translated to English before defect extraction.
 8. Optionally upload an image.
 9. Submit the defect and show the extracted component, defect type, severity, coach number, and generated defect code.
 10. Switch the demo role to `Supervisor`.

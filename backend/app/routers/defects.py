@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from ..config import settings
 from ..database import get_db
 from ..models import DefectLog, MediaFile, User
-from ..schemas import DefectCreate, DefectRead, DefectStatusUpdate, Severity, TranscriptionResponse
+from ..schemas import DefectCreate, DefectRead, DefectStatusUpdate, Severity, TranscriptionRequest, TranscriptionResponse
 from ..services.extractor import extract_defect_details, normalize_coach_number
 from ..services.speech import SpeechToTextError, transcribe_audio_file
 
@@ -102,7 +102,11 @@ def update_defect_status(
 
 
 @router.post("/{defect_id}/transcribe", response_model=TranscriptionResponse)
-def transcribe_defect_audio(defect_id: int, db: Session = Depends(get_db)) -> TranscriptionResponse:
+def transcribe_defect_audio(
+    defect_id: int,
+    payload: TranscriptionRequest | None = None,
+    db: Session = Depends(get_db),
+) -> TranscriptionResponse:
     if not settings.enable_whisper:
         return TranscriptionResponse(
             message="Whisper transcription is disabled for this environment.",
@@ -123,11 +127,13 @@ def transcribe_defect_audio(defect_id: int, db: Session = Depends(get_db)) -> Tr
 
     audio_path = _resolve_backend_file_path(latest_audio.file_path)
     try:
-        transcription = transcribe_audio_file(audio_path)
+        transcription = transcribe_audio_file(audio_path, payload.source_language if payload else None)
     except SpeechToTextError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    extraction_text = transcription.translated_text or transcription.raw_transcript
+    extraction_text = " ".join(
+        part for part in (transcription.translated_text, transcription.raw_transcript) if part
+    )
     extracted = extract_defect_details(extraction_text)
     defect.raw_transcript = transcription.raw_transcript
     defect.translated_text = transcription.translated_text
@@ -135,7 +141,7 @@ def transcribe_defect_audio(defect_id: int, db: Session = Depends(get_db)) -> Tr
     defect.component_name = extracted.component_name
     defect.defect_type = extracted.defect_type
     defect.severity = extracted.severity
-    defect.description = extracted.description
+    defect.description = transcription.translated_text or transcription.raw_transcript
 
     db.commit()
     db.refresh(defect)

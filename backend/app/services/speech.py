@@ -12,6 +12,18 @@ class SpeechToTextError(RuntimeError):
     pass
 
 
+LANGUAGE_HINTS = {
+    "en": "English",
+    "hi": "Hindi",
+    "kn": "Kannada",
+}
+
+RAILWAY_PROMPT = (
+    "Railway maintenance inspection audio. Common words include coach A1, B2, S3, door, brake pipe leakage, "
+    "electrical panel spark, smoke smell, wheel crack, seat cushion damage, urgent attention."
+)
+
+
 @dataclass(frozen=True)
 class TranscriptionResult:
     raw_transcript: str
@@ -19,16 +31,17 @@ class TranscriptionResult:
     language: str | None = None
 
 
-def transcribe_audio_file(audio_path: Path) -> TranscriptionResult:
+def transcribe_audio_file(audio_path: Path, source_language: str | None = None) -> TranscriptionResult:
     if not audio_path.exists():
         raise SpeechToTextError("Audio file was not found on disk.")
 
     _configure_ffmpeg_path()
+    language = _normalize_language_hint(source_language)
 
     try:
         model = _get_whisper_model()
-        result: dict[str, Any] = model.transcribe(str(audio_path), task="transcribe")
-        translation_result: dict[str, Any] = model.transcribe(str(audio_path), task="translate")
+        result: dict[str, Any] = model.transcribe(str(audio_path), **_transcribe_options("transcribe", language))
+        translation_result: dict[str, Any] = model.transcribe(str(audio_path), **_transcribe_options("translate", language))
     except SpeechToTextError:
         raise
     except Exception as exc:
@@ -47,6 +60,27 @@ def transcribe_audio_file(audio_path: Path) -> TranscriptionResult:
         language = str(language).strip() or None
 
     return TranscriptionResult(raw_transcript=text, translated_text=translated_text, language=language)
+
+
+def _normalize_language_hint(source_language: str | None) -> str | None:
+    if not source_language or source_language == "auto":
+        return None
+    if source_language not in LANGUAGE_HINTS:
+        raise SpeechToTextError("Unsupported audio language. Choose Auto, English, Hindi, or Kannada.")
+    return source_language
+
+
+def _transcribe_options(task: str, language: str | None) -> dict[str, Any]:
+    options: dict[str, Any] = {
+        "task": task,
+        "fp16": False,
+        "temperature": 0,
+        "condition_on_previous_text": False,
+        "initial_prompt": RAILWAY_PROMPT,
+    }
+    if language:
+        options["language"] = language
+    return options
 
 
 def _load_whisper_module():

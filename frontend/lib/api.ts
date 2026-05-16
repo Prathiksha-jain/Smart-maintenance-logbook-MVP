@@ -8,6 +8,7 @@ import type {
   HealthStatus,
   MediaFile,
   Severity,
+  SourceLanguage,
   TranscriptionResponse
 } from "@/lib/types";
 
@@ -90,9 +91,10 @@ export function updateDefectStatus(id: number, payload: DefectStatusPayload): Pr
   });
 }
 
-export function transcribeDefectAudio(id: number): Promise<TranscriptionResponse> {
+export function transcribeDefectAudio(id: number, sourceLanguage: SourceLanguage = "auto"): Promise<TranscriptionResponse> {
   return requestJson<TranscriptionResponse>(`/api/defects/${id}/transcribe`, {
-    method: "POST"
+    method: "POST",
+    body: JSON.stringify({ source_language: sourceLanguage })
   });
 }
 

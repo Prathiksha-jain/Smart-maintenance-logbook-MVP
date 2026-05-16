@@ -8,6 +8,7 @@ Role = Literal["inspector", "supervisor", "manager", "admin"]
 Severity = Literal["Low", "Medium", "High", "Critical"]
 DefectStatus = Literal["Open", "Reviewed", "Assigned", "In Progress", "Resolved", "Closed"]
 MediaFileType = Literal["audio", "image"]
+SourceLanguage = Literal["auto", "en", "hi", "kn"]
 
 
 class UserRead(BaseModel):
@@ -55,6 +56,10 @@ class DefectStatusUpdate(BaseModel):
     new_status: DefectStatus
     remarks: str | None = None
     updated_by: int = Field(..., gt=0)
+
+
+class TranscriptionRequest(BaseModel):
+    source_language: SourceLanguage = "auto"
 
 
 class DefectRead(BaseModel):

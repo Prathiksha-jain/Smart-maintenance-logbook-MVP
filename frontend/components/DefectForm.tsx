@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 import AudioRecorder from "@/components/AudioRecorder";
 import ImageUpload from "@/components/ImageUpload";
 import { createDefect, getHealth, transcribeDefectAudio, uploadDefectMedia } from "@/lib/api";
-import type { DefectLog, HealthStatus } from "@/lib/types";
+import type { DefectLog, HealthStatus, SourceLanguage } from "@/lib/types";
+import { SOURCE_LANGUAGE_OPTIONS } from "@/lib/types";
 import { useDemoUser } from "@/lib/useDemoUser";
 
 const SAMPLE_TRANSCRIPTS = [
@@ -21,6 +22,7 @@ export default function DefectForm() {
   const [coachNumber, setCoachNumber] = useState("");
   const [location, setLocation] = useState("");
   const [rawTranscript, setRawTranscript] = useState("");
+  const [sourceLanguage, setSourceLanguage] = useState<SourceLanguage>("hi");
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [createdDefect, setCreatedDefect] = useState<DefectLog | null>(null);
@@ -72,7 +74,7 @@ export default function DefectForm() {
         try {
           await uploadDefectMedia(defect.id, "audio", audioFile);
           if (health?.whisper_enabled) {
-            const transcription = await transcribeDefectAudio(defect.id);
+            const transcription = await transcribeDefectAudio(defect.id, sourceLanguage);
             if (transcription.defect) {
               latestDefect = transcription.defect;
             }
@@ -183,6 +185,26 @@ export default function DefectForm() {
           <div className="rounded-lg border border-slate-200 p-4">
             <h2 className="font-semibold text-slate-950">Audio evidence</h2>
             <p className="mt-1 text-sm text-slate-500">Record from the browser or upload a saved clip.</p>
+            {health?.whisper_enabled ? (
+              <label className="mt-4 grid gap-2">
+                <span className="field-label">Audio language</span>
+                <select
+                  className="field-input"
+                  value={sourceLanguage}
+                  onChange={(event) => setSourceLanguage(event.target.value as SourceLanguage)}
+                  disabled={isSubmitting}
+                >
+                  {SOURCE_LANGUAGE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <span className="text-xs leading-5 text-slate-500">
+                  Select Hindi or Kannada for better English translation. Use Auto only when unsure.
+                </span>
+              </label>
+            ) : null}
             <div className="mt-4">
               <AudioRecorder disabled={isSubmitting} onFileSelected={setAudioFile} />
             </div>

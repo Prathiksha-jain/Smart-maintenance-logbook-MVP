@@ -11,7 +11,7 @@ An isolated demo-ready MVP for railway inspection personnel. Inspectors can log 
 - Frontend port: `127.0.0.1:3101`.
 - SQLite database path: `backend/data/smart_logbook.sqlite3`.
 - PostgreSQL database name when enabled: `smart_maintenance_logbook`.
-- Whisper transcription and English translation are optional and disabled by default with `ENABLE_WHISPER=false`.
+- Whisper transcription and English translation are optional and disabled by default with `ENABLE_WHISPER=false`. For better Hindi/Kannada accuracy, use `WHISPER_MODEL=small` or `WHISPER_MODEL=medium`.
 - Upload folders:
   - `backend/uploads/audio/`
   - `backend/uploads/images/`

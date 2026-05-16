@@ -5,6 +5,7 @@ from dotenv import dotenv_values
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 ENV_FILE = BACKEND_DIR / ".env"
+SUPPORTED_WHISPER_MODELS = {"tiny", "base", "small", "medium", "large"}
 
 
 def _read_env() -> dict[str, str]:
@@ -32,6 +33,9 @@ class Settings:
         self.backend_port = int(env.get("BACKEND_PORT", "8101"))
         self.frontend_origin = env.get("FRONTEND_ORIGIN", "http://127.0.0.1:3101")
         self.enable_whisper = env.get("ENABLE_WHISPER", "false").lower() == "true"
+        self.whisper_model = env.get("WHISPER_MODEL", "small").lower()
+        if self.whisper_model not in SUPPORTED_WHISPER_MODELS:
+            raise ValueError("WHISPER_MODEL must be tiny, base, small, medium, or large.")
 
         self.data_dir = (self.backend_dir / "data").resolve()
         self.database_path = (self.data_dir / "smart_logbook.sqlite3").resolve()

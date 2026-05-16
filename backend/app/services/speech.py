@@ -75,6 +75,8 @@ def _transcribe_options(task: str, language: str | None) -> dict[str, Any]:
         "task": task,
         "fp16": False,
         "temperature": 0,
+        "beam_size": 5,
+        "patience": 1,
         "condition_on_previous_text": False,
         "initial_prompt": RAILWAY_PROMPT,
     }
@@ -116,6 +118,6 @@ def _get_whisper_model():
     whisper_module = _load_whisper_module()
     try:
         settings.whisper_model_dir.mkdir(parents=True, exist_ok=True)
-        return whisper_module.load_model("base", download_root=str(settings.whisper_model_dir))
+        return whisper_module.load_model(settings.whisper_model, download_root=str(settings.whisper_model_dir))
     except Exception as exc:
         raise SpeechToTextError(f"Could not load the Whisper model: {exc}") from exc

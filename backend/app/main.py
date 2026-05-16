@@ -46,4 +46,5 @@ def health_check() -> HealthRead:
         "host": settings.backend_host,
         "port": settings.backend_port,
         "whisper_enabled": settings.enable_whisper,
+        "whisper_model": settings.whisper_model,
     }

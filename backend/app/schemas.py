@@ -96,6 +96,7 @@ class HealthRead(BaseModel):
     host: str
     port: int
     whisper_enabled: bool
+    whisper_model: str
 
 
 class DashboardSummary(BaseModel):

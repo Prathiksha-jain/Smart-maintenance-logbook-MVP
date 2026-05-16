@@ -9,7 +9,7 @@ from ..config import settings
 from ..database import get_db
 from ..models import DefectLog, MediaFile, User
 from ..schemas import DefectCreate, DefectRead, DefectStatusUpdate, Severity, TranscriptionRequest, TranscriptionResponse
-from ..services.extractor import extract_defect_details, normalize_coach_number, normalize_translated_defect_text
+from ..services.extractor import extract_defect_details, normalize_coach_number
 from ..services.speech import SpeechToTextError, transcribe_audio_file
 
 
@@ -131,7 +131,7 @@ def transcribe_defect_audio(
     except SpeechToTextError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
-    translated_text = normalize_translated_defect_text(transcription.raw_transcript, transcription.translated_text)
+    translated_text = transcription.translated_text
     extraction_text = " ".join(part for part in (translated_text, transcription.raw_transcript) if part)
     extracted = extract_defect_details(extraction_text)
     defect.raw_transcript = transcription.raw_transcript

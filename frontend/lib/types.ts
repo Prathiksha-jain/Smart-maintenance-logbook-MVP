@@ -79,6 +79,7 @@ export type HealthStatus = {
   host: string;
   port: number;
   whisper_enabled: boolean;
+  whisper_model: string;
 };
 
 export type TranscriptionResponse = {

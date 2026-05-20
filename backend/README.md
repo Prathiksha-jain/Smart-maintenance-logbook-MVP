@@ -10,6 +10,7 @@ FastAPI backend MVP for the Smart Maintenance Logbook Web project.
 - Demo users are seeded automatically on startup.
 - No Docker or global system configuration is used.
 - Whisper speech-to-text/English translation is optional and disabled by default.
+- Ollama LLM extraction is optional and falls back to the rule-based extractor if Ollama is unavailable.
 
 ## Setup
 
@@ -67,6 +68,12 @@ The MVP works without Whisper. By default:
 ```env
 ENABLE_WHISPER=false
 WHISPER_MODEL=small
+WHISPER_NON_ENGLISH_MODEL=medium
+ENABLE_LLM_EXTRACTOR=false
+LLM_PROVIDER=ollama
+OLLAMA_BASE_URL=http://127.0.0.1:11434
+OLLAMA_MODEL=llama3.2:latest
+OLLAMA_TIMEOUT_SECONDS=45
 ```
 
 When disabled, this endpoint returns a clear message and does not modify the defect:
@@ -94,7 +101,24 @@ pip install -r requirements-whisper.txt
 
 When enabled, `POST /api/defects/{id}/transcribe` finds the latest audio evidence for the defect, transcribes it, translates the audio to English when needed, saves the original transcript and English translation, re-runs the rule-based extractor on the English text, and updates the defect fields. Send `{"source_language":"hi"}` for Hindi, `{"source_language":"kn"}` for Kannada, `{"source_language":"en"}` for English, or `{"source_language":"auto"}` for auto-detect.
 
-`WHISPER_MODEL` controls transcription quality. Use `small` for a better local demo than `base`; use `medium` for better Hindi/Kannada accuracy if the machine has enough CPU/RAM and you can wait longer. Whisper model files are downloaded only inside `backend/models/whisper/`.
+`WHISPER_MODEL` controls English audio. `WHISPER_NON_ENGLISH_MODEL` controls auto-detect, Hindi, and Kannada audio. The default keeps English on `small` for speed and uses `medium` for non-English accuracy. This is general model selection, not phrase hardcoding. Whisper model files are downloaded only inside `backend/models/whisper/`.
+
+If Whisper is unsure, the backend still saves the raw transcript and English translation, but it does not overwrite the structured defect fields with low-confidence text.
+
+## Optional Ollama LLM Extraction
+
+The backend can use a local Ollama model to extract structured defect details from transcript text. Whisper still handles audio-to-text. The default UI flow uses fast rule-based extraction first, and the Inspector page can call a separate slower smart refinement step with Ollama.
+
+Enable it in `backend/.env`:
+
+```env
+ENABLE_LLM_EXTRACTOR=true
+LLM_PROVIDER=ollama
+OLLAMA_BASE_URL=http://127.0.0.1:11434
+OLLAMA_MODEL=llama3.2:latest
+```
+
+The LLM must return strict JSON with `coach_number`, `component_name`, `defect_type`, `severity`, and `description`. The backend validates the JSON, protects detected critical severity, and falls back to the existing rule-based extractor if Ollama is off, slow, missing, or returns invalid output.
 
 ## Demo Users
 

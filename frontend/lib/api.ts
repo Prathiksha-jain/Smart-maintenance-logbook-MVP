@@ -5,6 +5,7 @@ import type {
   DefectLog,
   DefectStatusPayload,
   DemoUser,
+  ExtractionMode,
   HealthStatus,
   MediaFile,
   Severity,
@@ -91,10 +92,26 @@ export function updateDefectStatus(id: number, payload: DefectStatusPayload): Pr
   });
 }
 
-export function transcribeDefectAudio(id: number, sourceLanguage: SourceLanguage = "auto"): Promise<TranscriptionResponse> {
+export function transcribeDefectAudio(
+  id: number,
+  sourceLanguage: SourceLanguage = "auto",
+  runExtraction = true,
+  extractionMode: ExtractionMode = "fast"
+): Promise<TranscriptionResponse> {
   return requestJson<TranscriptionResponse>(`/api/defects/${id}/transcribe`, {
     method: "POST",
-    body: JSON.stringify({ source_language: sourceLanguage })
+    body: JSON.stringify({
+      source_language: sourceLanguage,
+      run_extraction: runExtraction,
+      extraction_mode: extractionMode
+    })
+  });
+}
+
+export function extractDefectDetails(id: number, mode: ExtractionMode = "fast"): Promise<TranscriptionResponse> {
+  return requestJson<TranscriptionResponse>(`/api/defects/${id}/extract`, {
+    method: "POST",
+    body: JSON.stringify({ mode })
   });
 }
 

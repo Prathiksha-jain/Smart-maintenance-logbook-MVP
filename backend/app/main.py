@@ -47,4 +47,8 @@ def health_check() -> HealthRead:
         "port": settings.backend_port,
         "whisper_enabled": settings.enable_whisper,
         "whisper_model": settings.whisper_model,
+        "whisper_non_english_model": settings.whisper_non_english_model,
+        "llm_extractor_enabled": settings.enable_llm_extractor,
+        "llm_provider": settings.llm_provider,
+        "ollama_model": settings.ollama_model,
     }

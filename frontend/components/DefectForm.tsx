@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 import AudioRecorder from "@/components/AudioRecorder";
 import ImageUpload from "@/components/ImageUpload";
-import { createDefect, getHealth, transcribeDefectAudio, uploadDefectMedia } from "@/lib/api";
+import { createDefect, extractDefectDetails, getHealth, transcribeDefectAudio, uploadDefectMedia } from "@/lib/api";
 import type { DefectLog, HealthStatus, SourceLanguage } from "@/lib/types";
 import { SOURCE_LANGUAGE_OPTIONS } from "@/lib/types";
 import { useDemoUser } from "@/lib/useDemoUser";
@@ -22,12 +22,13 @@ export default function DefectForm() {
   const [coachNumber, setCoachNumber] = useState("");
   const [location, setLocation] = useState("");
   const [rawTranscript, setRawTranscript] = useState("");
-  const [sourceLanguage, setSourceLanguage] = useState<SourceLanguage>("hi");
+  const [sourceLanguage, setSourceLanguage] = useState<SourceLanguage>("auto");
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [createdDefect, setCreatedDefect] = useState<DefectLog | null>(null);
   const [health, setHealth] = useState<HealthStatus | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRefining, setIsRefining] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mediaNotice, setMediaNotice] = useState<string | null>(null);
   const inspectorUser = getUserForRole("inspector");
@@ -67,6 +68,7 @@ export default function DefectForm() {
         raw_transcript: rawTranscript.trim() || "Pending audio transcription.",
         created_by: inspectorUser.id
       });
+      setCreatedDefect(defect);
 
       const notices: string[] = [];
       let latestDefect = defect;
@@ -74,11 +76,25 @@ export default function DefectForm() {
         try {
           await uploadDefectMedia(defect.id, "audio", audioFile);
           if (health?.whisper_enabled) {
-            const transcription = await transcribeDefectAudio(defect.id, sourceLanguage);
+            notices.push("Audio uploaded. Transcribing audio now...");
+            setMediaNotice(notices.join(" "));
+            const transcription = await transcribeDefectAudio(defect.id, sourceLanguage, false);
             if (transcription.defect) {
               latestDefect = transcription.defect;
+              setCreatedDefect(latestDefect);
             }
             notices.push(transcription.message);
+            setMediaNotice(notices.join(" "));
+
+            notices.push("Transcript is visible. Running fast extraction now...");
+            setMediaNotice(notices.join(" "));
+            const extraction = await extractDefectDetails(defect.id, "fast");
+            if (extraction.defect) {
+              latestDefect = extraction.defect;
+              setCreatedDefect(latestDefect);
+            }
+            notices.push(extraction.message);
+            setMediaNotice(notices.join(" "));
           }
         } catch (uploadError) {
           notices.push(uploadError instanceof Error ? uploadError.message : "Audio upload/transcription failed.");
@@ -101,6 +117,25 @@ export default function DefectForm() {
     }
   }
 
+  async function handleSmartRefine() {
+    if (!createdDefect) return;
+
+    setIsRefining(true);
+    setError(null);
+    setMediaNotice("Running local Ollama smart refinement. This can take a little time.");
+    try {
+      const extraction = await extractDefectDetails(createdDefect.id, "smart");
+      if (extraction.defect) {
+        setCreatedDefect(extraction.defect);
+      }
+      setMediaNotice(extraction.message);
+    } catch (refineError) {
+      setError(refineError instanceof Error ? refineError.message : "Smart refinement failed.");
+    } finally {
+      setIsRefining(false);
+    }
+  }
+
   return (
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1.25fr)_minmax(320px,0.75fr)]">
       <form onSubmit={handleSubmit} className="panel grid gap-5 p-5">
@@ -113,9 +148,17 @@ export default function DefectForm() {
           {health?.whisper_enabled ? (
             <p className="text-sm text-emerald-700">
               Whisper is enabled: recorded audio will be transcribed and translated to English after submit.
+              Select Hindi/Kannada to use the stronger {health.whisper_non_english_model} model.
             </p>
           ) : (
             <p className="text-sm text-slate-500">Whisper is disabled: type a transcript manually for extraction.</p>
+          )}
+          {health?.llm_extractor_enabled ? (
+            <p className="text-sm text-sky-700">
+              Fast extraction runs first. Optional smart refinement uses {health.ollama_model}.
+            </p>
+          ) : (
+            <p className="text-sm text-slate-500">Smart LLM extraction is disabled; using rule-based extraction.</p>
           )}
           {usersError ? <p className="text-sm text-amber-700">{usersError}</p> : null}
         </div>
@@ -201,7 +244,7 @@ export default function DefectForm() {
                   ))}
                 </select>
                 <span className="text-xs leading-5 text-slate-500">
-                  Select Hindi or Kannada for better English translation. Use Auto only when unsure.
+                  Auto uses the faster default model. Select Hindi or Kannada when you know the audio language.
                 </span>
               </label>
             ) : null}
@@ -230,7 +273,7 @@ export default function DefectForm() {
           className="primary-button w-full sm:w-auto"
           disabled={isSubmitting || usersLoading || !canSubmit}
         >
-          {isSubmitting ? "Submitting..." : health?.whisper_enabled ? "Submit and translate audio" : "Submit defect"}
+          {isSubmitting ? "Processing..." : health?.whisper_enabled ? "Submit fast" : "Submit defect"}
         </button>
       </form>
 
@@ -242,18 +285,33 @@ export default function DefectForm() {
             coach.
           </p>
         ) : (
-          <dl className="mt-4 grid gap-3 text-sm">
-            <ResultRow label="Defect code" value={createdDefect.defect_code} />
-            <ResultRow label="Coach" value={createdDefect.coach_number || "Not detected"} />
-            <ResultRow label="Component" value={createdDefect.component_name} />
-            <ResultRow label="Defect type" value={createdDefect.defect_type} />
-            <ResultRow label="Severity" value={createdDefect.severity} />
-            <ResultRow label="Status" value={createdDefect.status} />
-            {createdDefect.translated_text ? (
-              <ResultRow label="English translation" value={createdDefect.translated_text} />
+          <>
+            <dl className="mt-4 grid gap-3 text-sm">
+              <ResultRow label="Defect code" value={createdDefect.defect_code} />
+              <ResultRow label="Coach" value={createdDefect.coach_number || "Not detected"} />
+              <ResultRow label="Component" value={createdDefect.component_name} />
+              <ResultRow label="Defect type" value={createdDefect.defect_type} />
+              <ResultRow label="Severity" value={createdDefect.severity} />
+              <ResultRow label="Status" value={createdDefect.status} />
+              {createdDefect.raw_transcript && createdDefect.raw_transcript !== "Pending audio transcription." ? (
+                <ResultRow label="Voice transcript" value={createdDefect.raw_transcript} />
+              ) : null}
+              {createdDefect.translated_text ? (
+                <ResultRow label="English translation" value={createdDefect.translated_text} />
+              ) : null}
+              <ResultRow label="Description" value={createdDefect.description} />
+            </dl>
+            {health?.llm_extractor_enabled ? (
+              <button
+                type="button"
+                className="mt-4 w-full rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                onClick={handleSmartRefine}
+                disabled={isSubmitting || isRefining}
+              >
+                {isRefining ? "Refining with AI..." : "Improve with AI"}
+              </button>
             ) : null}
-            <ResultRow label="Description" value={createdDefect.description} />
-          </dl>
+          </>
         )}
       </aside>
     </div>

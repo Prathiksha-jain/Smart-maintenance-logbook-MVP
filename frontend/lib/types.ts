@@ -7,6 +7,7 @@ export type DefectStatus = "Open" | "Reviewed" | "Assigned" | "In Progress" | "R
 export type MediaFileType = "audio" | "image";
 
 export type SourceLanguage = "auto" | "en" | "hi" | "kn";
+export type ExtractionMode = "fast" | "smart";
 
 export type DemoUser = {
   id: number;
@@ -80,6 +81,10 @@ export type HealthStatus = {
   port: number;
   whisper_enabled: boolean;
   whisper_model: string;
+  whisper_non_english_model: string;
+  llm_extractor_enabled: boolean;
+  llm_provider: string;
+  ollama_model: string;
 };
 
 export type TranscriptionResponse = {
@@ -89,6 +94,8 @@ export type TranscriptionResponse = {
 
 export type TranscriptionPayload = {
   source_language: SourceLanguage;
+  run_extraction?: boolean;
+  extraction_mode?: ExtractionMode;
 };
 
 export const STATUS_OPTIONS: DefectStatus[] = [

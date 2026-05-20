@@ -8,8 +8,17 @@ from sqlalchemy.orm import Session
 from ..config import settings
 from ..database import get_db
 from ..models import DefectLog, MediaFile, User
-from ..schemas import DefectCreate, DefectRead, DefectStatusUpdate, Severity, TranscriptionRequest, TranscriptionResponse
-from ..services.extractor import extract_defect_details, normalize_coach_number
+from ..schemas import (
+    DefectCreate,
+    DefectRead,
+    DefectStatusUpdate,
+    ExtractionRequest,
+    Severity,
+    TranscriptionRequest,
+    TranscriptionResponse,
+)
+from ..services.extraction_pipeline import extract_defect_details_smart
+from ..services.extractor import ExtractedDefect, extract_defect_details, normalize_coach_number
 from ..services.speech import SpeechToTextError, transcribe_audio_file
 
 
@@ -22,7 +31,17 @@ def create_defect(payload: DefectCreate, db: Session = Depends(get_db)) -> Defec
     if creator is None:
         raise HTTPException(status_code=404, detail="created_by demo user was not found.")
 
-    extracted = extract_defect_details(payload.raw_transcript)
+    transcript = payload.raw_transcript.strip()
+    if transcript == "Pending audio transcription.":
+        extracted = ExtractedDefect(
+            coach_number=None,
+            component_name="General",
+            defect_type="Pending audio transcription",
+            severity="Low",
+            description="Pending audio transcription.",
+        )
+    else:
+        extracted = extract_defect_details(transcript)
     coach_number = normalize_coach_number(payload.coach_number) or extracted.coach_number
 
     defect = DefectLog(
@@ -33,7 +52,7 @@ def create_defect(payload: DefectCreate, db: Session = Depends(get_db)) -> Defec
         defect_type=extracted.defect_type,
         severity=extracted.severity,
         description=extracted.description,
-        raw_transcript=payload.raw_transcript.strip(),
+        raw_transcript=transcript,
         translated_text=None,
         status="Open",
         location=payload.location.strip() if payload.location else None,
@@ -133,9 +152,40 @@ def transcribe_defect_audio(
 
     translated_text = transcription.translated_text
     extraction_text = " ".join(part for part in (translated_text, transcription.raw_transcript) if part)
-    extracted = extract_defect_details(extraction_text)
     defect.raw_transcript = transcription.raw_transcript
     defect.translated_text = translated_text
+
+    should_run_extraction = payload.run_extraction if payload else True
+    if not should_run_extraction:
+        db.commit()
+        db.refresh(defect)
+        message = "Audio transcribed and saved. Extraction can run next."
+        if translated_text:
+            message = "Audio transcribed, translated to English, and saved. Extraction can run next."
+        if transcription.warning:
+            message = f"{message} {transcription.warning}"
+        return TranscriptionResponse(message=message, defect=defect)
+
+    extraction_mode = payload.extraction_mode if payload else "fast"
+    extracted = _extract_by_mode(extraction_text, extraction_mode)
+    has_structured_signal = extracted.component_name != "General" or bool(extracted.coach_number)
+    if transcription.low_confidence or not has_structured_signal:
+        db.commit()
+        db.refresh(defect)
+        if transcription.low_confidence:
+            message = (
+                "Audio transcription was saved, but confidence was low, so defect fields were not overwritten. "
+                "Please retry with clearer audio or select the exact audio language."
+            )
+        else:
+            message = (
+                "Audio transcription was saved, but no clear railway defect details were detected, "
+                "so defect fields were not overwritten."
+            )
+        if transcription.warning:
+            message = f"{message} {transcription.warning}"
+        return TranscriptionResponse(message=message, defect=defect)
+
     defect.coach_number = extracted.coach_number or defect.coach_number
     defect.component_name = extracted.component_name
     defect.defect_type = extracted.defect_type
@@ -147,10 +197,58 @@ def transcribe_defect_audio(
     message = "Audio transcribed and defect details updated."
     if translated_text:
         message = "Audio transcribed, translated to English, and defect details updated."
+    if transcription.warning:
+        message = f"{message} {transcription.warning}"
     return TranscriptionResponse(
         message=message,
         defect=defect,
     )
+
+
+@router.post("/{defect_id}/extract", response_model=TranscriptionResponse)
+def extract_defect_from_saved_transcript(
+    defect_id: int,
+    payload: ExtractionRequest | None = None,
+    db: Session = Depends(get_db),
+) -> TranscriptionResponse:
+    defect = db.get(DefectLog, defect_id)
+    if defect is None:
+        raise HTTPException(status_code=404, detail="Defect was not found.")
+
+    extraction_text = " ".join(part for part in (defect.translated_text, defect.raw_transcript) if part).strip()
+    if not extraction_text or extraction_text == "Pending audio transcription.":
+        raise HTTPException(status_code=400, detail="No usable transcript is available for extraction yet.")
+
+    mode = payload.mode if payload else "fast"
+    extracted = _extract_by_mode(extraction_text, mode)
+    has_structured_signal = extracted.component_name != "General" or bool(extracted.coach_number)
+    if not has_structured_signal:
+        return TranscriptionResponse(
+            message="Transcript was saved, but no clear railway defect details were detected.",
+            defect=defect,
+        )
+
+    defect.coach_number = extracted.coach_number or defect.coach_number
+    defect.component_name = extracted.component_name
+    defect.defect_type = extracted.defect_type
+    defect.severity = extracted.severity
+    defect.description = extracted.description
+
+    db.commit()
+    db.refresh(defect)
+    message = "Fast extraction completed and defect details updated."
+    if mode == "smart":
+        message = "Smart AI extraction completed and defect details updated."
+    return TranscriptionResponse(
+        message=message,
+        defect=defect,
+    )
+
+
+def _extract_by_mode(raw_transcript: str, mode: str) -> ExtractedDefect:
+    if mode == "smart":
+        return extract_defect_details_smart(raw_transcript)
+    return extract_defect_details(raw_transcript)
 
 
 def _next_defect_code(db: Session) -> str:

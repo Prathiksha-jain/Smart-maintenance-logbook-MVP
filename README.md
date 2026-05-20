@@ -11,7 +11,8 @@ An isolated demo-ready MVP for railway inspection personnel. Inspectors can log 
 - Frontend port: `127.0.0.1:3101`.
 - SQLite database path: `backend/data/smart_logbook.sqlite3`.
 - PostgreSQL database name when enabled: `smart_maintenance_logbook`.
-- Whisper transcription and English translation are optional and disabled by default with `ENABLE_WHISPER=false`. For better Hindi/Kannada accuracy, use `WHISPER_MODEL=small` or `WHISPER_MODEL=medium`.
+- Whisper transcription and English translation are optional and disabled by default with `ENABLE_WHISPER=false`. English uses `WHISPER_MODEL=small`; auto-detect, Hindi, and Kannada use `WHISPER_NON_ENGLISH_MODEL=medium` for better multilingual accuracy.
+- Ollama LLM extraction is optional with `ENABLE_LLM_EXTRACTOR=true`. The normal demo flow uses fast rule-based extraction first, and the Inspector page offers an `Improve with AI` action for slower local Ollama refinement.
 - Upload folders:
   - `backend/uploads/audio/`
   - `backend/uploads/images/`
@@ -106,14 +107,16 @@ npm run build
 4. Switch the demo role to `Inspector`.
 5. Open `/inspector`.
 6. Use a sample transcript shortcut or type a new railway defect transcript.
-7. Optionally record audio or upload an audio file. If Whisper is enabled, choose the audio language before submitting. Hindi/Kannada/English audio is translated to English before defect extraction.
-8. Optionally upload an image.
-9. Submit the defect and show the extracted component, defect type, severity, coach number, and generated defect code.
-10. Switch the demo role to `Supervisor`.
-11. Open `/supervisor`.
-12. Select the newly created defect, review transcript/media, and update its status.
-13. Switch the demo role to `Manager`.
-14. Open `/manager` and show the updated summary and analytics.
+7. Optionally record audio or upload an audio file. If Whisper is enabled, choose the audio language before submitting, or leave it on auto-detect. Hindi/Kannada/English audio is translated to English before defect extraction.
+8. The backend uses fast rule-based extraction for the normal submit flow so the demo stays responsive.
+9. Optionally upload an image.
+10. Submit the defect and show the extracted component, defect type, severity, coach number, and generated defect code.
+11. If you want the local LLM version, click `Improve with AI` on the extracted result.
+12. Switch the demo role to `Supervisor`.
+13. Open `/supervisor`.
+14. Select the newly created defect, review transcript/media, and update its status.
+15. Switch the demo role to `Manager`.
+16. Open `/manager` and show the updated summary and analytics.
 
 ## Useful API Checks
 
@@ -146,6 +149,9 @@ curl.exe -X POST http://127.0.0.1:8101/api/defects/1/transcribe
 - If the frontend shows a backend connection error, confirm the backend is running on `127.0.0.1:8101`.
 - If the frontend cannot start, run `npm install` again inside `frontend/`.
 - If backend imports fail for file uploads, confirm `python-multipart` installed from `backend/requirements.txt`.
+- If Hindi/Kannada transcription is slow the first time, Whisper is downloading or loading the stronger non-English model inside `backend/models/whisper/`.
+- If transcription looks uncertain, the backend saves the transcript but avoids overwriting defect fields with low-confidence text.
+- If LLM extraction is enabled but Ollama is not running on `127.0.0.1:11434`, the backend automatically falls back to rule-based extraction.
 - If the SQLite database has old demo names, restart the backend once. The seed updates `INS-001`, `SUP-001`, and `MGR-001` to the named demo users.
 - If you want a clean local demo database, stop the backend, delete only `backend/data/smart_logbook.sqlite3`, then restart the backend. Do not delete anything outside this repository.
 - Do not use ports `3000`, `5000`, `8000`, `8501`, or `5432` for this MVP.

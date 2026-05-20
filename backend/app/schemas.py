@@ -9,6 +9,7 @@ Severity = Literal["Low", "Medium", "High", "Critical"]
 DefectStatus = Literal["Open", "Reviewed", "Assigned", "In Progress", "Resolved", "Closed"]
 MediaFileType = Literal["audio", "image"]
 SourceLanguage = Literal["auto", "en", "hi", "kn"]
+ExtractionMode = Literal["fast", "smart"]
 
 
 class UserRead(BaseModel):
@@ -60,6 +61,12 @@ class DefectStatusUpdate(BaseModel):
 
 class TranscriptionRequest(BaseModel):
     source_language: SourceLanguage = "auto"
+    run_extraction: bool = True
+    extraction_mode: ExtractionMode = "fast"
+
+
+class ExtractionRequest(BaseModel):
+    mode: ExtractionMode = "fast"
 
 
 class DefectRead(BaseModel):
@@ -97,6 +104,10 @@ class HealthRead(BaseModel):
     port: int
     whisper_enabled: bool
     whisper_model: str
+    whisper_non_english_model: str
+    llm_extractor_enabled: bool
+    llm_provider: str
+    ollama_model: str
 
 
 class DashboardSummary(BaseModel):

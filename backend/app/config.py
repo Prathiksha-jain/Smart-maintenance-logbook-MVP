@@ -34,8 +34,18 @@ class Settings:
         self.frontend_origin = env.get("FRONTEND_ORIGIN", "http://127.0.0.1:3101")
         self.enable_whisper = env.get("ENABLE_WHISPER", "false").lower() == "true"
         self.whisper_model = env.get("WHISPER_MODEL", "small").lower()
+        self.whisper_non_english_model = env.get("WHISPER_NON_ENGLISH_MODEL", "medium").lower()
+        self.enable_llm_extractor = env.get("ENABLE_LLM_EXTRACTOR", "false").lower() == "true"
+        self.llm_provider = env.get("LLM_PROVIDER", "ollama").lower()
+        self.ollama_base_url = env.get("OLLAMA_BASE_URL", "http://127.0.0.1:11434").rstrip("/")
+        self.ollama_model = env.get("OLLAMA_MODEL", "llama3.2:latest")
+        self.ollama_timeout_seconds = float(env.get("OLLAMA_TIMEOUT_SECONDS", "45"))
         if self.whisper_model not in SUPPORTED_WHISPER_MODELS:
             raise ValueError("WHISPER_MODEL must be tiny, base, small, medium, or large.")
+        if self.whisper_non_english_model not in SUPPORTED_WHISPER_MODELS:
+            raise ValueError("WHISPER_NON_ENGLISH_MODEL must be tiny, base, small, medium, or large.")
+        if self.llm_provider != "ollama":
+            raise ValueError("LLM_PROVIDER must be ollama for this MVP.")
 
         self.data_dir = (self.backend_dir / "data").resolve()
         self.database_path = (self.data_dir / "smart_logbook.sqlite3").resolve()
